@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>US States Atlas — Compare Any Two States</title>
+<meta name="description" content="Pick any two US states and compare population, area, GDP, capital, and statehood date, on an honest tile-grid map." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "bba4e16a7d9b4d9985eda0cda2624e60"}'></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="9" height="9" fill="#1d3557"/>
+        <rect x="13" y="2" width="9" height="9" fill="#9c2b2b"/>
+        <rect x="2" y="13" width="9" height="9" fill="#9c2b2b"/>
+        <rect x="13" y="13" width="9" height="9" fill="#1d3557"/>
+      </svg>
+      US States Atlas
+    </a>
+    <button class="theme-toggle" id="themeToggle" type="button">☾ / ☀</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="eyebrow">50 states + the District of Columbia</div>
+    <h1>Compare any two states</h1>
+    <p>Population, land area, gross domestic product, capital, and statehood date — pick two states below, or click two tiles on the map.</p>
+  </section>
+
+  <section class="selector-row">
+    <div class="state-panel side-a" id="panelA">
+      <div class="panel-side-label">State A</div>
+      <select id="selectA"></select>
+      <div class="state-card" id="cardA"></div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="state-panel side-b" id="panelB">
+      <div class="panel-side-label">State B</div>
+      <select id="selectB"></select>
+      <div class="state-card" id="cardB"></div>
+    </div>
+  </section>
+
+  <section class="map-section">
+    <div class="map-hint">Click a tile to set it as <b id="armedLabel">State A</b>. A tile-grid layout is used instead of a geographic map — every state gets equal visual weight and an honest, non-fabricated position, based on published grid coordinates rather than traced borders.</div>
+    <div class="tile-grid" id="tileGrid"></div>
+    <div class="map-caption">Grid layout: <a href="https://github.com/kristw/gridmap-layout-usa" target="_blank" rel="noopener">kristw/gridmap-layout-usa</a> (MIT licensed)</div>
+  </section>
+
+  <section class="scale-strip" id="scaleStrip"></section>
+
+  <section class="compare-section">
+    <h2>Core metrics</h2>
+    <table class="compare-table" id="compareTable"></table>
+  </section>
+
+  <footer>
+    Data: US Census Bureau (population, July 2025 est.), US Bureau of Economic Analysis via Wikipedia (GDP, 2024), Wikipedia (area, capital, statehood dates). Largest-city field is general reference knowledge, not independently re-verified. Built with plain HTML/CSS/JS, no framework.<br />
+    <a href="https://github.com/followorbounce/us-states-atlas" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+</main>
+
+<script src="js/data/states.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
