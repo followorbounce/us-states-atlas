@@ -1,13 +1,23 @@
 # US States Atlas
 
-An interactive side-by-side comparison tool for the 50 US states plus
-the District of Columbia: pick any two, or click two tiles on a
-schematic map, and compare population, land area, GDP (nominal and
-per capita), capital, largest city, statehood date, state politics
-(governor, US Senators, legislature control, 2024 presidential
-result), notable universities, and each state's economic specialty.
-No build step, no framework — plain HTML/CSS/JS, same pattern as this
-account's other comparison sites this session.
+Two pages, no build step, no framework — plain HTML/CSS/JS:
+- **`index.html`** — an interactive side-by-side comparison tool for
+  the 50 US states plus the District of Columbia: pick any two, or
+  click two tiles/states on a map, and compare population, land area,
+  GDP (nominal and per capita), capital, largest city, statehood date,
+  state politics (governor, US Senators, legislature control, 2024
+  presidential result), notable universities, and each state's
+  economic specialty.
+- **`government.html`** — a single interactive map of all 51 entities
+  at once, colored by party control across 4 selectable layers: US
+  Senate, US House, governorships, state legislatures. See "Congress
+  & Government page" below.
+
+Both pages share `style.css`, `js/data/states.js`, and the tile-grid /
+geographic map rendering approach (each page has its own small JS
+file — `js/app.js` for the 2-state comparison, `js/government.js` for
+the all-51-at-once party map — since the interaction models are
+different enough not to force into one shared component).
 
 ## Two map modes (tile-grid + real geographic)
 Originally shipped with only the tile-grid map, reasoning that a true
@@ -155,6 +165,63 @@ state, following the same pattern established on `country-atlas`.
   dently web-verified. 1-3 well-known institutions per state;
   specialty is a genuine one-line distinguishing note, not generic
   filler.
+- **Official links (added 2026-09-20)**: `politics.senators[].url` is
+  each senator's own senate.gov page, and `universities[].url` is each
+  institution's official homepage. Senator URLs came from senate.gov's
+  own senators index page (a different fetch from the one that sourced
+  names/parties — that page format doesn't expose the links). Both
+  sets of URLs were cross-verified 1:1 against the names already in
+  the file (100/100 senators, 88/88 unique universities) before
+  splicing, catching zero mismatches.
+
+## Congress & Government page (`government.html`, added 2026-09-20)
+User asked for a separate page: "интерактивную карту распределения в
+верхней и нижней палате и других институтах управления" (an
+interactive map of the distribution in the upper and lower chamber and
+other institutions of governance) — i.e. a single map of all 51
+entities colored by party control, not a 2-state comparison.
+
+- **4 layers**, switchable via buttons above the map: **US Senate**
+  (party per state — solid if both senators match, purple if split),
+  **US House** (colored by whichever party holds more seats in that
+  state's delegation, purple if tied), **Governors** (solid R/D),
+  **State Legislatures** (derived from the existing `politics.legislature`
+  text — `legislatureClass()` in `js/government.js` parses "X
+  trifecta" / "X legislature, Y governor" / "Split control" /
+  "Democratic (Council + Mayor)" into a color; note that "X
+  legislature, Y governor" colors by the **legislature's** controlling
+  party, which is a different (and correct, for this layer) reading
+  than "trifecta" status).
+- **New data**: `politics.houseSeats: {total, R, D, vacant}` per
+  state, added to `js/data/states.js`. Sourced from Wikipedia's "List
+  of current members of the United States House of Representatives"
+  (fetched in 2 alphabetical halves, since 435 rows risked the same
+  truncation problem the Senate list had) — **independently verified
+  by summing all 50 states' R/D/vacant counts and confirming they
+  matched the official chamber totals exactly** (219 R / 214 D / 2
+  vacant, from the "119th United States Congress" article) before
+  trusting the per-state breakdown. This is the same discipline as the
+  senator-name verification: don't just accept a fetched table,
+  cross-check it against an independent total.
+- **Summary stat cards** (`renderSummary()`) show live-computed
+  national totals per layer — e.g. Senate shows 53 R / 45 D / 2 I /
+  100 total, computed by actually counting `states.js`'s 100 senator
+  entries, not hardcoded, so it can't drift from the per-state data.
+- Reuses the same tile-grid / geographic map toggle as `index.html`,
+  but colors **all 51 states simultaneously** by category (not a
+  2-side comparison) and supports clicking any one state for a detail
+  panel (governor, both senators with links, House delegation with a
+  proportional R/D bar, legislature text, 2024 result) — a materially
+  different interaction model from `index.html`'s "pick 2, compare",
+  which is why it's a separate JS file (`js/government.js`) rather
+  than a mode of `js/app.js`.
+- Party colors are new CSS custom properties (`--party-r`, `--party-d`,
+  `--party-i`, `--party-split`), set equal to the existing
+  `--side-b`/`--side-a` navy/red in light mode (a happy coincidence —
+  the site's existing 2-side comparison colors already matched the
+  standard US political red/blue convention) and to their dark-mode
+  equivalents; `--party-i` and `--party-split` are new gold-ish and
+  purple tones respectively, defined in both themes.
 
 ## Deliberately not built this pass
 - Historical time series (no per-state growth-over-time chart, unlike

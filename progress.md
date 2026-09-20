@@ -98,7 +98,36 @@ Verified in a real headless Firefox: 10 links present and correctly
 targeted for California vs. Texas, 5 for DC vs. Wyoming (DC
 contributes only its 2 universities, no senator links).
 
+## 2026-09-20 — added a Congress & Government page
+User asked for a new, separate tab: an interactive map of party
+control across the Senate, House, and "other institutions of
+governance." Built `government.html` + `js/government.js`, linked
+from a new `.site-nav` in both pages' headers.
+
+New data: `politics.houseSeats` per state (R/D/vacant seat counts),
+sourced from Wikipedia's House-members list in 2 fetches (split to
+avoid the same 435-row truncation risk the earlier 100-senator fetch
+hit), verified by summing to the official chamber totals (219 R / 214
+D / 2 vacant) before trusting it — matched exactly.
+
+4 map layers (Senate/House/Governors/Legislatures), each with its own
+color logic, a live-computed national summary (counted from the
+actual per-state data, not hardcoded), a party-color legend, and a
+click-for-detail panel. Reused the tile-grid/geographic map toggle
+from `index.html` but recolored for "all 51 at once by category"
+instead of "2 states side by side."
+
+Verified in a real headless Firefox: all 4 layers' summary totals
+(Senate 53R/45D/2I=100, House 219R/214D/2vacant=435, Governors
+26R/25D=51, Legislatures 28R/17D/6split=51) match official/expected
+totals exactly; clicking Texas and California produced correct detail
+panels; both map modes and both themes render correctly; 390px mobile
+width wraps the 4 layer buttons without overflow.
+
 ## Known gaps (see CLAUDE.md "Deliberately not built this pass")
 - No historical time series / growth-over-time chart.
 - No deeper per-state profile beyond the current ~13 compared fields.
 - No county-level detail on the geographic map.
+- Congress/government data is a September 2026 snapshot, not a live
+  feed — will drift as seats change (special elections, deaths,
+  resignations), same caveat as the senator data on the main page.
