@@ -144,14 +144,31 @@ body {
   display: flex; align-items: center; justify-content: center; background: var(--panel);
 }
 
+/* ---------- Map mode toggle ---------- */
+.map-mode-toggle {
+  display: flex; justify-content: center; gap: 2px; margin: 0 auto 14px; width: fit-content;
+  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+}
+.map-mode-btn {
+  background: var(--panel); border: none; color: var(--ink-dim); cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.74rem; padding: 8px 16px;
+}
+.map-mode-btn.active { background: var(--ink); color: var(--paper); }
+:root[data-theme="dark"] .map-mode-btn.active { background: var(--gold); color: #12161c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .map-mode-btn.active { background: var(--gold); color: #12161c; }
+}
+
 /* ---------- Tile grid map ---------- */
 .map-section { margin: 30px 0; }
-.map-hint { font-size: 0.85rem; color: var(--ink-dim); margin-bottom: 12px; text-align: center; }
+.map-hint { font-size: 0.85rem; color: var(--ink-dim); margin-bottom: 12px; text-align: center; max-width: 760px; margin-left: auto; margin-right: auto; }
 .map-hint b { color: var(--ink); }
+.map-hint code { font-family: var(--font-mono); font-size: 0.85em; }
 .tile-grid {
   display: grid; gap: 3px; max-width: 720px; margin: 0 auto;
   grid-template-columns: repeat(12, 1fr);
 }
+.tile-grid[hidden], .geo-map[hidden] { display: none; }
 .tile {
   aspect-ratio: 1; background: var(--panel-alt); border: 1px solid var(--line);
   display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -164,6 +181,18 @@ body {
 .tile.is-b { background: var(--side-b); color: #fff; border-color: var(--side-b); }
 .tile.is-a.is-b { background: linear-gradient(135deg, var(--side-a) 50%, var(--side-b) 50%); }
 .map-caption { text-align: center; font-size: 0.74rem; color: var(--ink-dim); margin-top: 10px; }
+
+/* ---------- Geographic map ---------- */
+.geo-map { max-width: 800px; margin: 0 auto; }
+.geo-svg { width: 100%; height: auto; display: block; }
+.geo-state {
+  fill: var(--panel-alt); stroke: var(--line); stroke-width: 1; cursor: pointer;
+  transition: fill 0.12s ease;
+}
+.geo-state:hover { fill: var(--line); }
+.geo-state.is-a { fill: var(--side-a); }
+.geo-state.is-b { fill: var(--side-b); }
+.geo-error { text-align: center; color: var(--ink-dim); font-size: 0.85rem; padding: 30px 0; }
 
 /* ---------- Scale strip ---------- */
 .scale-strip {

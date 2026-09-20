@@ -9,17 +9,61 @@ result), notable universities, and each state's economic specialty.
 No build step, no framework — plain HTML/CSS/JS, same pattern as this
 account's other comparison sites this session.
 
-## Why a tile-grid map, not a geographic one
-A true geographic map needs accurate state-border SVG path data.
-Reconstructing that from memory risks real distortion (see this
-project's standing practice, also applied in `country-atlas`, of
-never fabricating geographic shapes). Instead this uses a **tile-grid
-map** ("waffle map" / NPR-style grid cartogram): one square per state,
-positioned at real published `(x, y)` coordinates from
-[`kristw/gridmap-layout-usa`](https://github.com/kristw/gridmap-layout-usa)
-(MIT licensed), fetched via the GitHub API and stored directly in
-`js/data/states.js`. Every state gets equal visual weight, an
-approximately correct relative position, and zero invented geometry.
+## Two map modes (tile-grid + real geographic)
+Originally shipped with only the tile-grid map, reasoning that a true
+geographic map needs accurate state-border path data and
+reconstructing that from memory risks real distortion (this project's
+standing practice, also applied in `country-atlas`, of never
+fabricating geographic shapes). That reasoning was sound but the
+conclusion was incomplete — real, non-fabricated border data is
+publicly available (US Census Bureau cartographic boundary files), so
+**2026-09-20 a second, true geographic map mode was added**, toggled
+via buttons above the map (`#modeGridBtn` / `#modeGeoBtn`), after the
+user pointed out a real, honest limitation of the tile-grid: New York
+doesn't touch the map's eastern edge in that layout (it's one column
+inset from CT/RI), which looks wrong for a state with real Atlantic
+coastline, even though the grid coordinates themselves are correct
+per their source.
+
+- **Tile-grid map** ("waffle map" / NPR-style grid cartogram): one
+  square per state, positioned at real published `(x, y)` coordinates
+  from [`kristw/gridmap-layout-usa`](https://github.com/kristw/gridmap-layout-usa)
+  (MIT licensed), fetched via the GitHub API and stored in
+  `js/data/states.js`. Every state gets equal visual weight and an
+  approximately correct relative position, at the cost of some real
+  adjacencies — an explicit, documented tradeoff, not a bug.
+- **Geographic map**: real state borders from `js/data/us-topo.json`,
+  a local copy of `states-albers-10m.json` from
+  [`topojson/us-atlas`](https://github.com/topojson/us-atlas) (ISC
+  licensed), itself a redistribution of the US Census Bureau's 2017
+  cartographic boundary shapefiles (public domain) pre-projected with
+  `d3.geoAlbersUsa` (Alaska/Hawaii correctly inset, 975×610 viewport).
+  Rendered client-side: `topojson.feature()` converts the topology to
+  GeoJSON, `d3.geoPath()` (no projection set, since the coordinates
+  are already projected) generates each state's SVG `d` path.
+  `d3-array`, `d3-geo`, and `topojson-client` are loaded from
+  cdn.jsdelivr.net (well-known libraries, consistent with this
+  project's existing Google Fonts CDN usage — only the actual
+  geometry *data* is vendored locally, not fetched cross-origin at
+  runtime).
+- Both maps share the same click-to-arm-side interaction
+  (`onTileOrPathClick`) and the same `is-a`/`is-b` highlight classes,
+  so switching modes mid-comparison doesn't lose selection state.
+- Real bug caught during verification: `.tile-grid[hidden]` /
+  `.geo-map[hidden]` needed an explicit `display: none` rule — the
+  class selector `.tile-grid { display: grid }` otherwise had higher
+  specificity than the browser's default `[hidden]` UA-stylesheet
+  rule, so toggling the `hidden` *property* in JS silently failed to
+  actually hide the element. Caught by screenshot (both maps visible
+  at once), not by the property check alone, which reported the
+  attribute as set correctly — a reminder that confirming a hidden
+  attribute is set isn't the same as confirming the element is
+  actually invisible.
+- Second real bug: the geo map's state borders used `stroke:
+  var(--paper)`, which is a near-black color in dark mode — nearly
+  invisible against the equally-dark fill. Changed to `var(--line)`,
+  which has enough contrast in both themes. Caught by a dark-mode
+  screenshot, not by the light-mode check alone.
 
 ## Data sourcing
 All numeric/date fields in `js/data/states.js` are WebFetch-verified,
@@ -104,12 +148,14 @@ state, following the same pattern established on `country-atlas`.
   filler.
 
 ## Deliberately not built this pass
-- A true geographic map (see above — no fabricated border data).
 - Historical time series (no per-state growth-over-time chart, unlike
   country-atlas's Growth Over Time feature).
 - Deeper per-state profiles beyond the current ~13 compared fields
   (no attempt to match country-atlas's 16-category depth — this
   remains a narrower, single-purpose comparison tool).
+- County-level detail on the geographic map (state-level borders only;
+  `us-atlas` also publishes `counties-albers-10m.json` if that's ever
+  wanted, at a meaningfully larger file size).
 
 ## Deploy
 Public repo, GitHub Pages from `main` root. Cloudflare Web Analytics

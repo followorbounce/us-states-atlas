@@ -58,11 +58,7 @@
       .map((s) => `<div class="tile" data-id="${s.id}" title="${s.name}" style="grid-column:${s.gridX + 1};grid-row:${s.gridY + 1}">${s.abbr}</div>`)
       .join("");
     grid.querySelectorAll(".tile").forEach((tile) => {
-      tile.addEventListener("click", () => {
-        state[state.armed] = tile.dataset.id;
-        state.armed = state.armed === "a" ? "b" : "a";
-        renderAll();
-      });
+      tile.addEventListener("click", () => onTileOrPathClick(tile.dataset.id));
     });
   }
 
@@ -72,6 +68,76 @@
       tile.classList.toggle("is-b", tile.dataset.id === state.b);
     });
     document.getElementById("armedLabel").textContent = state.armed === "a" ? "State A" : "State B";
+  }
+
+  /* ---------- Geographic map (real Census Bureau state borders) ---------- */
+  let mapMode = "grid";
+  let geoLoaded = false;
+  const nameToId = new Map(States.map((s) => [s.name, s.id]));
+
+  function onTileOrPathClick(id) {
+    state[state.armed] = id;
+    state.armed = state.armed === "a" ? "b" : "a";
+    renderAll();
+  }
+
+  async function loadGeoMap() {
+    if (geoLoaded) return;
+    geoLoaded = true;
+    const container = document.getElementById("geoMap");
+    try {
+      const topo = await fetch("js/data/us-topo.json").then((r) => r.json());
+      const collection = topojson.feature(topo, topo.objects.states);
+      const path = d3.geoPath();
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", "0 0 975 610");
+      svg.setAttribute("class", "geo-svg");
+      for (const feature of collection.features) {
+        const sid = nameToId.get(feature.properties.name);
+        if (!sid) continue;
+        const p = document.createElementNS(svgNS, "path");
+        p.setAttribute("d", path(feature));
+        p.setAttribute("class", "geo-state");
+        p.setAttribute("data-id", sid);
+        const title = document.createElementNS(svgNS, "title");
+        title.textContent = feature.properties.name;
+        p.appendChild(title);
+        p.addEventListener("click", () => onTileOrPathClick(sid));
+        svg.appendChild(p);
+      }
+      container.innerHTML = "";
+      container.appendChild(svg);
+      updateGeoHighlights();
+    } catch (e) {
+      container.innerHTML = `<p class="geo-error">Couldn't load the geographic map (${e.message}). The tile-grid view still works.</p>`;
+    }
+  }
+
+  function updateGeoHighlights() {
+    document.querySelectorAll(".geo-state").forEach((p) => {
+      p.classList.toggle("is-a", p.dataset.id === state.a);
+      p.classList.toggle("is-b", p.dataset.id === state.b);
+    });
+  }
+
+  function setMapMode(mode) {
+    mapMode = mode;
+    const isGeo = mode === "geo";
+    document.getElementById("tileGrid").hidden = isGeo;
+    document.getElementById("geoMap").hidden = !isGeo;
+    document.getElementById("hintGrid").hidden = isGeo;
+    document.getElementById("hintGeo").hidden = !isGeo;
+    document.getElementById("gridCaption").hidden = isGeo;
+    document.getElementById("geoCaption").hidden = !isGeo;
+    document.getElementById("modeGridBtn").classList.toggle("active", !isGeo);
+    document.getElementById("modeGeoBtn").classList.toggle("active", isGeo);
+    if (isGeo) loadGeoMap();
+  }
+
+  function setupMapModeToggle() {
+    document.getElementById("modeGridBtn").addEventListener("click", () => setMapMode("grid"));
+    document.getElementById("modeGeoBtn").addEventListener("click", () => setMapMode("geo"));
   }
 
   function safeRatio(x, y) {
@@ -185,6 +251,7 @@
     renderCard("a");
     renderCard("b");
     updateTileHighlights();
+    updateGeoHighlights();
     renderScaleStrip();
     renderCompareTable();
   }
@@ -214,4 +281,5 @@
   renderTileGrid();
   renderAll();
   setupTheme();
+  setupMapModeToggle();
 })();

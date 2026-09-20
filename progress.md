@@ -48,7 +48,35 @@ on a fresh port. Not a code bug, but worth remembering: always verify
 which directory a running dev server is actually serving from if a
 page looks unexpectedly wrong, before assuming the code broke.
 
+## 2026-09-20 — added a real geographic map mode
+User flagged that the tile-grid map looked inaccurate for New York
+specifically (no eastern-edge adjacency, unlike its real Atlantic
+coastline) and asked to see both map styles with a toggle, rather than
+picking one. Verified the tile-grid coordinates were correct against
+the canonical `kristw/gridmap-layout-usa` source first (they were —
+it's an inherent tradeoff of that grid layout, not a transcription
+bug), then built a second map mode using real US Census Bureau state
+borders (`states-albers-10m.json` from `topojson/us-atlas`, ISC
+licensed, vendored locally as `js/data/us-topo.json`), rendered
+client-side with `d3-geo` + `topojson-client` from a CDN.
+
+Two real bugs caught during verification, both visual, both requiring
+a screenshot (not just a DOM-property check) to catch:
+1. Toggling the `hidden` property via JS didn't actually hide the
+   tile grid when switching to Geographic mode — `.tile-grid { display:
+   grid }`'s class-selector specificity beat the browser's default
+   `[hidden]` rule. Fixed with an explicit `.tile-grid[hidden],
+   .geo-map[hidden] { display: none; }`.
+2. State border strokes were invisible in dark mode (`stroke:
+   var(--paper)`, too close to the dark fill color). Fixed to
+   `var(--line)`.
+
+Verified in a real headless Firefox: 51 state paths render, click
+selects the right state and arms the other side, mode toggle hides/
+shows correctly, both light and dark themes, and 390px mobile width
+(no horizontal overflow).
+
 ## Known gaps (see CLAUDE.md "Deliberately not built this pass")
-- No true geographic map (tile-grid only, by design).
 - No historical time series / growth-over-time chart.
 - No deeper per-state profile beyond the current ~13 compared fields.
+- No county-level detail on the geographic map.
