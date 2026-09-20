@@ -118,14 +118,32 @@
     ].join("");
   }
 
+  const fmtSenators = (s) => {
+    if (!s || !s.politics) return "—";
+    if (!s.politics.senators || s.politics.senators.length === 0) {
+      return s.politics.senatorsNote || "—";
+    }
+    return s.politics.senators.map((sen) => `${sen.name} (${sen.party[0]})`).join("<br>");
+  };
+  const fmtGovTitle = (s) => (s && s.id === "district-of-columbia" ? "Mayor" : "Governor");
+  const fmtList = (v) => (v && v.length ? v.join(", ") : "—");
+
   const ROWS = [
-    { label: "Population", get: (s) => s.population, fmt: fmtInt },
-    { label: "Land area", get: (s) => s.totalAreaKm2, fmt: fmtKm2 },
-    { label: "GDP (nominal, 2024)", get: (s) => s.gdpNominalUSD, fmt: fmtMoney },
-    { label: "GDP per capita (2024)", get: (s) => s.gdpPerCapitaUSD, fmt: fmtPerCapita },
-    { label: "Capital", get: (s) => s.capital, fmt: (v) => v },
-    { label: "Largest city", get: (s) => s.largestCity, fmt: (v) => v },
-    { label: "Statehood", get: (s) => s.statehood, fmt: (v) => v },
+    { section: "Basics", label: "Population", get: (s) => s.population, fmt: fmtInt },
+    { section: "Basics", label: "Land area", get: (s) => s.totalAreaKm2, fmt: fmtKm2 },
+    { section: "Basics", label: "GDP (nominal, 2024)", get: (s) => s.gdpNominalUSD, fmt: fmtMoney },
+    { section: "Basics", label: "GDP per capita (2024)", get: (s) => s.gdpPerCapitaUSD, fmt: fmtPerCapita },
+    { section: "Basics", label: "Capital", get: (s) => s.capital, fmt: (v) => v },
+    { section: "Basics", label: "Largest city", get: (s) => s.largestCity, fmt: (v) => v },
+    { section: "Basics", label: "Statehood", get: (s) => s.statehood, fmt: (v) => v },
+    { section: "Politics", label: "Governor / Mayor",
+      get: (s) => s.politics && `${s.politics.governor} (${s.politics.governorParty})`,
+      fmt: (v) => v || "—" },
+    { section: "Politics", label: "U.S. Senators", get: (s) => s, fmt: fmtSenators },
+    { section: "Politics", label: "State legislature", get: (s) => s.politics && s.politics.legislature, fmt: (v) => v || "—" },
+    { section: "Politics", label: "2024 presidential result", get: (s) => s.politics && s.politics.pres2024, fmt: (v) => v || "—" },
+    { section: "Education", label: "Notable universities", get: (s) => s.universities, fmt: fmtList },
+    { section: "Economy", label: "State specialty", get: (s) => s.specialty, fmt: (v) => v || "—" },
   ];
 
   function renderCompareTable() {
@@ -135,7 +153,8 @@
       table.innerHTML = "";
       return;
     }
-    table.innerHTML = ROWS.map((row) => {
+    let lastSection = null;
+    const rows = ROWS.map((row) => {
       const va = row.get(a), vb = row.get(b);
       const isNum = typeof va === "number" && typeof vb === "number";
       let bar = "";
@@ -144,13 +163,20 @@
         const pa = (va / total) * 100;
         bar = `<div class="compare-bar"><div class="a" style="width:${pa}%"></div><div class="b" style="width:${100 - pa}%"></div></div>`;
       }
-      return `
+      let sectionRow = "";
+      if (row.section !== lastSection) {
+        sectionRow = `<tr class="section-row"><td colspan="3">${row.section}</td></tr>`;
+        lastSection = row.section;
+      }
+      const label = row.label === "Governor / Mayor" ? `${fmtGovTitle(a)} / ${fmtGovTitle(b)}` : row.label;
+      return `${sectionRow}
         <tr>
           <td class="val a">${row.fmt(va)}${isNum ? bar : ""}</td>
-          <td class="lbl"><span class="name">${row.label}</span></td>
+          <td class="lbl"><span class="name">${label}</span></td>
           <td class="val b">${row.fmt(vb)}${isNum ? bar : ""}</td>
         </tr>`;
     }).join("");
+    table.innerHTML = rows;
   }
 
   function renderAll() {
