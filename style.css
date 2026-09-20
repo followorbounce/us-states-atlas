@@ -216,6 +216,8 @@ table.compare-table { width: 100%; border-collapse: collapse; table-layout: fixe
 .compare-table td.val { font-family: var(--font-mono); font-size: 0.95rem; width: 37%; white-space: normal; overflow-wrap: break-word; }
 .compare-table td.val.a { color: var(--side-a); text-align: right; }
 .compare-table td.val.b { color: var(--side-b); text-align: left; }
+.compare-table td.val a { color: inherit; text-decoration: underline; text-decoration-color: currentColor; text-underline-offset: 2px; opacity: 0.9; }
+.compare-table td.val a:hover { opacity: 1; }
 .compare-table td.lbl { text-align: center; font-size: 0.8rem; color: var(--ink-dim); width: 26%; }
 .compare-table td.lbl .name { color: var(--ink); font-weight: 600; display: block; }
 .compare-table tr.section-row td {

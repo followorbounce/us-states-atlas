@@ -87,9 +87,18 @@ not recalled from memory:
   objects: `id, abbr, name, gridX, gridY, capital, largestCity,
   statehood, population, totalAreaKm2, gdpNominalUSD,
   gdpPerCapitaUSD, politics, universities, specialty`. `politics` is
-  `{ governor, governorParty, senators: [{name,party}, {name,party}],
+  `{ governor, governorParty, senators: [{name,party,url}, {name,party,url}],
   legislature, pres2024 }` (DC has `senators: []` +
   `senatorsNote` instead, since it has no voting Senate seats).
+  `universities` is `[{name,url}, ...]`. Senator `url`s are each
+  senator's official senate.gov page (from senate.gov's own senators
+  index, which links out to each member's site); university `url`s
+  are each institution's official homepage — both added 2026-09-20
+  on request ("добавь ссылки на официальные страницы"), general
+  reference knowledge for the university URLs (extremely stable,
+  unambiguous domains), independently WebFetch-verified for the
+  senator URLs against the same senate.gov source already used for
+  senator names/parties.
 - `js/app.js` — renders the tile grid (CSS grid, one cell per state
   positioned via inline `grid-column`/`grid-row` from `gridX`/`gridY`),
   the two side panels (dropdown selects, kept in sync with map

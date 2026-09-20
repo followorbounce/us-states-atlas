@@ -189,10 +189,13 @@
     if (!s.politics.senators || s.politics.senators.length === 0) {
       return s.politics.senatorsNote || "—";
     }
-    return s.politics.senators.map((sen) => `${sen.name} (${sen.party[0]})`).join("<br>");
+    return s.politics.senators
+      .map((sen) => `<a href="${sen.url}" target="_blank" rel="noopener">${sen.name}</a> (${sen.party[0]})`)
+      .join("<br>");
   };
   const fmtGovTitle = (s) => (s && s.id === "district-of-columbia" ? "Mayor" : "Governor");
-  const fmtList = (v) => (v && v.length ? v.join(", ") : "—");
+  const fmtList = (v) =>
+    v && v.length ? v.map((item) => `<a href="${item.url}" target="_blank" rel="noopener">${item.name}</a>`).join(", ") : "—";
 
   const ROWS = [
     { section: "Basics", label: "Population", get: (s) => s.population, fmt: fmtInt },

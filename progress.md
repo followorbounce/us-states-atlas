@@ -76,6 +76,28 @@ selects the right state and arms the other side, mode toggle hides/
 shows correctly, both light and dark themes, and 390px mobile width
 (no horizontal overflow).
 
+## 2026-09-20 — added official links for senators and universities
+User asked for official-page links on senators and universities.
+Fetched senate.gov's senators index specifically for each member's
+own official senate.gov URL (a different fetch from the one that
+sourced names/parties, since that page format doesn't expose links) —
+got all 100 in one pass, cross-verified 1:1 against the 100 names
+already in `states.js` (zero mismatches). University URLs are each
+institution's official homepage, from general reference knowledge
+(stable domains), also cross-verified 1:1 against the 88 unique
+university names already in the file before splicing.
+
+Restructured `politics.senators` entries to add a `url` field and
+converted `universities` from a plain string array to `{name, url}`
+objects; `js/app.js`'s `fmtSenators`/`fmtList` now render `<a
+target="_blank">` links, styled to inherit the side's color with an
+underline (`.compare-table td.val a`). DC's `senatorsNote` (no voting
+Senate seats) correctly stays plain text, no link.
+
+Verified in a real headless Firefox: 10 links present and correctly
+targeted for California vs. Texas, 5 for DC vs. Wyoming (DC
+contributes only its 2 universities, no senator links).
+
 ## Known gaps (see CLAUDE.md "Deliberately not built this pass")
 - No historical time series / growth-over-time chart.
 - No deeper per-state profile beyond the current ~13 compared fields.
