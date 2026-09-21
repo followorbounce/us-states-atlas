@@ -3,7 +3,6 @@
   const sorted = [...States].sort((a, b) => a.name.localeCompare(b.name));
 
   let layer = "senate";
-  let mapMode = "geo";
   let selected = null;
 
   const PARTY_CLASS = {
@@ -11,56 +10,105 @@
     "Democratic–Farmer–Labor": "party-d",
     Republican: "party-r",
     Independent: "party-i",
+    Vacant: "party-none",
+    Split: "party-split",
   };
+  const BLOCK_ORDER = ["Democratic", "Independent", "Split", "Republican", "Vacant"];
 
-  function senateClass(s) {
-    if (!s.politics.senators || s.politics.senators.length === 0) return "party-none";
-    const parties = s.politics.senators.map((x) => x.party);
-    if (parties.every((p) => p === parties[0])) return PARTY_CLASS[parties[0]] || "party-none";
-    return "party-split";
-  }
-  function houseClass(s) {
-    const h = s.politics.houseSeats;
-    if (!h || h.total === 0) return "party-none";
-    if (h.R > h.D) return "party-r";
-    if (h.D > h.R) return "party-d";
-    return "party-split";
-  }
-  function governorClass(s) {
-    return PARTY_CLASS[s.politics.governorParty] || "party-none";
-  }
-  function legislatureClass(s) {
+  function legislatureParty(s) {
     const leg = s.politics.legislature;
-    if (!leg) return "party-none";
-    if (leg === "Split control") return "party-split";
-    if (leg.startsWith("Democratic")) return "party-d";
-    if (leg.startsWith("Republican")) return "party-r";
-    return "party-none";
+    if (!leg) return "Split";
+    if (leg === "Split control") return "Split";
+    if (leg.startsWith("Democratic")) return "Democratic";
+    if (leg.startsWith("Republican")) return "Republican";
+    return "Split";
   }
-  const CLASS_FN = { senate: senateClass, house: houseClass, governor: governorClass, legislature: legislatureClass };
-  function colorClass(s) {
-    return CLASS_FN[layer](s);
+
+  /* ---------- Build the seat list for each layer ---------- */
+  function buildSenateSeats() {
+    const seats = [];
+    States.forEach((s) => (s.politics.senators || []).forEach((sen) => {
+      seats.push({ party: sen.party, stateId: s.id, label: `${sen.name} — ${s.name} (${sen.party})`, url: sen.url });
+    }));
+    return seats;
   }
+  function buildHouseSeats() {
+    const seats = [];
+    States.forEach((s) => {
+      const h = s.politics.houseSeats;
+      if (!h) return;
+      for (let i = 0; i < h.R; i++) seats.push({ party: "Republican", stateId: s.id, label: `${s.name} — Republican-held seat` });
+      for (let i = 0; i < h.D; i++) seats.push({ party: "Democratic", stateId: s.id, label: `${s.name} — Democratic-held seat` });
+      for (let i = 0; i < h.vacant; i++) seats.push({ party: "Vacant", stateId: s.id, label: `${s.name} — vacant seat` });
+    });
+    return seats;
+  }
+  function buildGovernorSeats() {
+    return sorted.map((s) => ({
+      party: PARTY_CLASS[s.politics.governorParty] === "party-none" ? "Independent" : s.politics.governorParty.startsWith("Democratic") ? "Democratic" : "Republican",
+      stateId: s.id,
+      label: `${s.name} — ${s.politics.governor} (${s.politics.governorParty})`,
+    }));
+  }
+  function buildLegislatureSeats() {
+    return sorted.map((s) => ({
+      party: legislatureParty(s),
+      stateId: s.id,
+      label: `${s.name} — ${s.politics.legislature}`,
+    }));
+  }
+  const BUILD_FN = { senate: buildSenateSeats, house: buildHouseSeats, governor: buildGovernorSeats, legislature: buildLegislatureSeats };
 
   const LAYER_META = {
     senate: {
-      hint: "Each state's 2 US Senators. Solid = both senators from that party. Purple = split between parties.",
-      legend: [["Republican-held", "party-r"], ["Democratic-held", "party-d"], ["Split", "party-split"]],
+      hint: "All 100 US Senate seats, arranged as the chamber's actual seat count. Blue = Democratic, gold = Independent, red = Republican, left to right.",
+      legend: [["Democratic", "party-d"], ["Independent", "party-i"], ["Republican", "party-r"]],
     },
     house: {
-      hint: "Each state's US House delegation, colored by whichever party holds more seats. Purple = evenly tied.",
-      legend: [["Republican majority", "party-r"], ["Democratic majority", "party-d"], ["Tied", "party-split"]],
+      hint: "All 435 US House seats (plus 2 currently vacant). Same left-to-right party grouping as the Senate chart.",
+      legend: [["Democratic", "party-d"], ["Republican", "party-r"], ["Vacant", "party-none"]],
     },
     governor: {
-      hint: "Each state's governor (or the DC mayor), by party.",
-      legend: [["Republican", "party-r"], ["Democratic", "party-d"]],
+      hint: "One seat per governor (50 states + the DC mayor) — not a real chamber, but the same seat-chart language for consistency.",
+      legend: [["Democratic", "party-d"], ["Republican", "party-r"]],
     },
     legislature: {
-      hint: "Which party controls the state legislature. Purple = the two chambers are held by different parties.",
-      legend: [["Republican-controlled", "party-r"], ["Democratic-controlled", "party-d"], ["Split between chambers", "party-split"]],
+      hint: "One seat per state legislature's overall control — not a real chamber. Purple = the two chambers are held by different parties.",
+      legend: [["Democratic-controlled", "party-d"], ["Republican-controlled", "party-r"], ["Split between chambers", "party-split"]],
     },
   };
 
+  /* ---------- Hemicycle geometry ---------- */
+  function hemicycleLayout(n, cx, cy, innerR, outerR, rows) {
+    const radii = [];
+    for (let i = 0; i < rows; i++) {
+      radii.push(rows === 1 ? outerR : innerR + (i * (outerR - innerR)) / (rows - 1));
+    }
+    const totalR = radii.reduce((a, b) => a + b, 0);
+    const perRow = radii.map((r) => Math.max(1, Math.round((n * r) / totalR)));
+    let diff = n - perRow.reduce((a, b) => a + b, 0);
+    let guard = 0;
+    while (diff !== 0 && guard < 10000) {
+      const j = perRow.length - 1 - (guard % rows);
+      if (diff > 0) { perRow[j]++; diff--; }
+      else if (perRow[j] > 1) { perRow[j]--; diff++; }
+      guard++;
+    }
+    const points = [];
+    for (let i = 0; i < rows; i++) {
+      const r = radii[i];
+      const count = perRow[i];
+      for (let j = 0; j < count; j++) {
+        const t = count > 1 ? j / (count - 1) : 0.5;
+        const theta = Math.PI - t * Math.PI;
+        points.push({ x: cx + r * Math.cos(theta), y: cy - r * Math.sin(theta), angle: theta });
+      }
+    }
+    points.sort((a, b) => b.angle - a.angle);
+    return points;
+  }
+
+  /* ---------- Render ---------- */
   function renderLegend() {
     const meta = LAYER_META[layer];
     document.getElementById("layerHint").textContent = meta.hint;
@@ -69,47 +117,71 @@
       .join("");
   }
 
-  function renderSummary() {
+  function statCards(items) {
+    return items.map(([label, n, tone]) => `<div class="gov-stat"><div class="n ${tone}">${n}</div><div class="lbl">${label}</div></div>`).join("");
+  }
+  function renderSummary(seats) {
     const el = document.getElementById("govSummary");
+    const counts = {};
+    seats.forEach((s) => (counts[s.party] = (counts[s.party] || 0) + 1));
     if (layer === "senate") {
-      let r = 0, d = 0, i = 0;
-      States.forEach((s) => (s.politics.senators || []).forEach((sen) => {
-        if (sen.party === "Republican") r++;
-        else if (sen.party === "Independent") i++;
-        else d++;
-      }));
-      el.innerHTML = statCards([["R", r, "r"], ["D", d, "d"], ["I", i, "i"], ["Total seats", r + d + i, ""]]);
+      el.innerHTML = statCards([["R", counts.Republican || 0, "r"], ["D", counts.Democratic || 0, "d"], ["I", counts.Independent || 0, "i"], ["Total seats", seats.length, ""]]);
     } else if (layer === "house") {
-      let r = 0, d = 0, v = 0;
-      States.forEach((s) => { const h = s.politics.houseSeats; if (h) { r += h.R; d += h.D; v += h.vacant; } });
-      el.innerHTML = statCards([["R", r, "r"], ["D", d, "d"], ["Vacant", v, ""], ["Total seats", r + d + v, ""]]);
+      el.innerHTML = statCards([["R", counts.Republican || 0, "r"], ["D", counts.Democratic || 0, "d"], ["Vacant", counts.Vacant || 0, ""], ["Total seats", seats.length, ""]]);
     } else if (layer === "governor") {
-      let r = 0, d = 0;
-      States.forEach((s) => { if (s.politics.governorParty === "Republican") r++; else d++; });
-      el.innerHTML = statCards([["R governors", r, "r"], ["D governors", d, "d"]]);
+      el.innerHTML = statCards([["R governors", counts.Republican || 0, "r"], ["D governors", counts.Democratic || 0, "d"]]);
     } else {
-      let r = 0, d = 0, split = 0;
-      States.forEach((s) => { const c = legislatureClass(s); if (c === "party-r") r++; else if (c === "party-d") d++; else split++; });
-      el.innerHTML = statCards([["R-controlled", r, "r"], ["D-controlled", d, "d"], ["Split", split, ""]]);
+      el.innerHTML = statCards([["R-controlled", counts.Republican || 0, "r"], ["D-controlled", counts.Democratic || 0, "d"], ["Split", counts.Split || 0, ""]]);
     }
   }
-  function statCards(items) {
-    return items
-      .map(([label, n, tone]) => `<div class="gov-stat"><div class="n ${tone}">${n}</div><div class="lbl">${label}</div></div>`)
-      .join("");
+
+  function renderHemicycle() {
+    const seats = BUILD_FN[layer]();
+    renderSummary(seats);
+    renderLegend();
+
+    seats.sort((a, b) => BLOCK_ORDER.indexOf(a.party) - BLOCK_ORDER.indexOf(b.party));
+
+    const svg = document.getElementById("hemicycle");
+    const cx = 500, cy = 500;
+    const outerR = 460;
+    const innerR = 90;
+    const dotR = seats.length > 300 ? 5.5 : seats.length > 120 ? 7.5 : 11;
+    const rows = Math.max(4, Math.min(26, Math.round(Math.sqrt(seats.length * 1.4))));
+    const points = hemicycleLayout(seats.length, cx, cy, innerR, outerR, rows);
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+    svg.setAttribute("viewBox", `0 0 1000 ${cy + 60}`);
+    points.forEach((pt, i) => {
+      const seat = seats[i];
+      if (!seat) return;
+      const c = document.createElementNS(svgNS, "circle");
+      c.setAttribute("cx", pt.x.toFixed(1));
+      c.setAttribute("cy", pt.y.toFixed(1));
+      c.setAttribute("r", dotR);
+      c.setAttribute("class", `seat ${PARTY_CLASS[seat.party] || "party-none"}`);
+      c.setAttribute("data-id", seat.stateId);
+      if (seat.stateId === selected) c.classList.add("selected");
+      const title = document.createElementNS(svgNS, "title");
+      title.textContent = seat.label;
+      c.appendChild(title);
+      c.addEventListener("click", () => onStateClick(seat.stateId));
+      svg.appendChild(c);
+    });
   }
 
   function onStateClick(id) {
     selected = id;
     renderDetail();
-    updateHighlights();
+    renderHemicycle();
   }
 
   function renderDetail() {
     const el = document.getElementById("stateDetail");
     const s = byId(selected);
     if (!s) {
-      el.innerHTML = `<p class="state-detail-hint">Click a state above for its full delegation.</p>`;
+      el.innerHTML = `<p class="state-detail-hint">Click a seat above for that state's full delegation.</p>`;
       return;
     }
     const govTitle = s.id === "district-of-columbia" ? "Mayor" : "Governor";
@@ -132,94 +204,15 @@
       </div>`;
   }
 
-  function updateHighlights() {
-    document.querySelectorAll(".tile, .geo-state").forEach((el) => {
-      el.classList.remove("party-r", "party-d", "party-i", "party-split", "party-none", "selected");
-      const s = byId(el.dataset.id);
-      if (s) el.classList.add(colorClass(s));
-      if (el.dataset.id === selected) el.classList.add("selected");
-    });
-  }
-
-  /* ---------- Tile grid ---------- */
-  function renderTileGrid() {
-    const grid = document.getElementById("tileGrid");
-    const maxX = Math.max(...States.map((s) => s.gridX));
-    const maxY = Math.max(...States.map((s) => s.gridY));
-    grid.style.gridTemplateColumns = `repeat(${maxX + 1}, 1fr)`;
-    grid.style.gridTemplateRows = `repeat(${maxY + 1}, 1fr)`;
-    grid.innerHTML = sorted
-      .map((s) => `<div class="tile" data-id="${s.id}" title="${s.name}" style="grid-column:${s.gridX + 1};grid-row:${s.gridY + 1}">${s.abbr}</div>`)
-      .join("");
-    grid.querySelectorAll(".tile").forEach((tile) => {
-      tile.addEventListener("click", () => onStateClick(tile.dataset.id));
-    });
-  }
-
-  /* ---------- Geographic map ---------- */
-  let geoLoaded = false;
-  const nameToId = new Map(States.map((s) => [s.name, s.id]));
-
-  async function loadGeoMap() {
-    if (geoLoaded) return;
-    geoLoaded = true;
-    const container = document.getElementById("geoMap");
-    try {
-      const topo = await fetch("js/data/us-topo.json").then((r) => r.json());
-      const collection = topojson.feature(topo, topo.objects.states);
-      const path = d3.geoPath();
-      const svgNS = "http://www.w3.org/2000/svg";
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", "0 0 975 610");
-      svg.setAttribute("class", "geo-svg");
-      for (const feature of collection.features) {
-        const sid = nameToId.get(feature.properties.name);
-        if (!sid) continue;
-        const p = document.createElementNS(svgNS, "path");
-        p.setAttribute("d", path(feature));
-        p.setAttribute("class", "geo-state");
-        p.setAttribute("data-id", sid);
-        const title = document.createElementNS(svgNS, "title");
-        title.textContent = feature.properties.name;
-        p.appendChild(title);
-        p.addEventListener("click", () => onStateClick(sid));
-        svg.appendChild(p);
-      }
-      container.innerHTML = "";
-      container.appendChild(svg);
-      updateHighlights();
-    } catch (e) {
-      container.innerHTML = `<p class="geo-error">Couldn't load the geographic map (${e.message}). The tile-grid view still works.</p>`;
-    }
-  }
-
-  function setMapMode(mode) {
-    mapMode = mode;
-    const isGeo = mode === "geo";
-    document.getElementById("tileGrid").hidden = isGeo;
-    document.getElementById("geoMap").hidden = !isGeo;
-    document.getElementById("gridCaption").hidden = isGeo;
-    document.getElementById("geoCaption").hidden = !isGeo;
-    document.getElementById("modeGridBtn").classList.toggle("active", !isGeo);
-    document.getElementById("modeGeoBtn").classList.toggle("active", isGeo);
-    if (isGeo) loadGeoMap().then(updateHighlights);
-    else updateHighlights();
-  }
-
   function setLayer(l) {
     layer = l;
     document.querySelectorAll(".layer-btn").forEach((b) => b.classList.toggle("active", b.dataset.layer === l));
-    renderLegend();
-    renderSummary();
-    updateHighlights();
-    if (selected) renderDetail();
+    renderHemicycle();
   }
 
   function setupTheme() {
     const btn = document.getElementById("themeToggle");
-    const saved = (() => {
-      try { return localStorage.getItem("usatlas-theme"); } catch { return null; }
-    })();
+    const saved = (() => { try { return localStorage.getItem("usatlas-theme"); } catch { return null; } })();
     if (saved) document.documentElement.setAttribute("data-theme", saved);
     btn.addEventListener("click", () => {
       const cur = document.documentElement.getAttribute("data-theme") ||
@@ -231,12 +224,8 @@
   }
 
   document.querySelectorAll(".layer-btn").forEach((b) => b.addEventListener("click", () => setLayer(b.dataset.layer)));
-  document.getElementById("modeGridBtn").addEventListener("click", () => setMapMode("grid"));
-  document.getElementById("modeGeoBtn").addEventListener("click", () => setMapMode("geo"));
 
-  renderTileGrid();
-  renderLegend();
-  renderSummary();
+  renderHemicycle();
+  renderDetail();
   setupTheme();
-  loadGeoMap().then(updateHighlights);
 })();

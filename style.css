@@ -266,14 +266,17 @@ body {
 .state-detail .house-bar .r { background: var(--party-r); }
 .state-detail .house-bar .d { background: var(--party-d); }
 
-/* Party-colored geo/tile states (government page overrides the compare-page is-a/is-b coloring) */
-.geo-state.party-r, .tile.party-r { fill: var(--party-r); background: var(--party-r); color: #fff; border-color: var(--party-r); }
-.geo-state.party-d, .tile.party-d { fill: var(--party-d); background: var(--party-d); color: #fff; border-color: var(--party-d); }
-.geo-state.party-i, .tile.party-i { fill: var(--party-i); background: var(--party-i); color: #fff; border-color: var(--party-i); }
-.geo-state.party-split, .tile.party-split { fill: var(--party-split); background: var(--party-split); color: #fff; border-color: var(--party-split); }
-.geo-state.party-none, .tile.party-none { fill: var(--panel-alt); }
-.geo-state.selected { stroke: var(--ink); stroke-width: 2.5; }
-.tile.selected { outline: 3px solid var(--ink); outline-offset: -3px; }
+/* ---------- Hemicycle seat chart (Congress & Government page) ---------- */
+.hemicycle-wrap { max-width: 780px; margin: 0 auto; }
+.hemicycle-svg { width: 100%; height: auto; display: block; }
+.seat { cursor: pointer; stroke: var(--paper); stroke-width: 1; transition: transform 0.1s ease; transform-box: fill-box; transform-origin: center; }
+.seat:hover { transform: scale(1.25); }
+.seat.party-r { fill: var(--party-r); }
+.seat.party-d { fill: var(--party-d); }
+.seat.party-i { fill: var(--party-i); }
+.seat.party-split { fill: var(--party-split); }
+.seat.party-none { fill: var(--line); }
+.seat.selected { stroke: var(--ink); stroke-width: 2.5; }
 
 /* ---------- Scale strip ---------- */
 .scale-strip {

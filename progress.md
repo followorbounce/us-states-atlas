@@ -110,12 +110,12 @@ avoid the same 435-row truncation risk the earlier 100-senator fetch
 hit), verified by summing to the official chamber totals (219 R / 214
 D / 2 vacant) before trusting it — matched exactly.
 
-4 map layers (Senate/House/Governors/Legislatures), each with its own
+4 layers (Senate/House/Governors/Legislatures), each with its own
 color logic, a live-computed national summary (counted from the
 actual per-state data, not hardcoded), a party-color legend, and a
-click-for-detail panel. Reused the tile-grid/geographic map toggle
-from `index.html` but recolored for "all 51 at once by category"
-instead of "2 states side by side."
+click-for-detail panel. First version reused the tile-grid/geographic
+map toggle from `index.html`, recolored for "all 51 at once by
+category" instead of "2 states side by side."
 
 Verified in a real headless Firefox: all 4 layers' summary totals
 (Senate 53R/45D/2I=100, House 219R/214D/2vacant=435, Governors
@@ -123,6 +123,35 @@ Verified in a real headless Firefox: all 4 layers' summary totals
 totals exactly; clicking Texas and California produced correct detail
 panels; both map modes and both themes render correctly; 390px mobile
 width wraps the 4 layer buttons without overflow.
+
+### Same day, follow-up — replaced the map with a hemicycle seat chart
+User: "карту мест в кабинете а не карту страны" (a chart of seats in
+the chamber, not a map of the country) — wanted the standard
+parliamentary hemicycle visualization instead of a geographic map.
+Removed `index.html`'s tile-grid/geo-map entirely from this page (no
+more d3-geo/topojson-client/`us-topo.json` dependency here) and built
+a generic hemicycle layout function: N points arranged on concentric
+semicircular arcs, row count scaling with `√(n×1.4)` so both a 51-seat
+chart (Governors/Legislatures) and a 435-seat chart (House) read as a
+cohesive fan rather than the smaller one looking sparse — this needed
+one real iteration: the first version derived row count from a fixed
+`dotR × rowGap` geometry instead of from `n` directly, which produced
+a good-looking 435-dot House chart but a sparse, disconnected-looking
+51-dot Governors chart (only 3-4 seats per row). Fixed by deriving row
+count from `n` first, then computing dot radius/spacing from that.
+
+Senate seats are real individuals (100 senators, each with a working
+name/party/senate.gov link, hover tooltip, click-to-select). House
+seats are synthetic (built from each state's aggregate R/D/vacant
+count, since no per-representative data exists) but still individually
+clickable back to their state. All seats sort into strict left-to-right
+party blocks (Democratic → Independent → Split → Republican → Vacant)
+for the familiar "blue block / red block" reading.
+
+Verified in a real headless Firefox: seat counts and party splits
+still match official totals exactly on all 4 layers after the rewrite;
+click-to-select and the detail panel still work; both themes and
+390px mobile width render correctly with the new chart.
 
 ## Known gaps (see CLAUDE.md "Deliberately not built this pass")
 - No historical time series / growth-over-time chart.

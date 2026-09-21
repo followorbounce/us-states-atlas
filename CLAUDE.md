@@ -178,20 +178,39 @@ state, following the same pattern established on `country-atlas`.
 User asked for a separate page: "интерактивную карту распределения в
 верхней и нижней палате и других институтах управления" (an
 interactive map of the distribution in the upper and lower chamber and
-other institutions of governance) — i.e. a single map of all 51
+other institutions of governance) — i.e. a single view of all 51
 entities colored by party control, not a 2-state comparison.
 
-- **4 layers**, switchable via buttons above the map: **US Senate**
-  (party per state — solid if both senators match, purple if split),
-  **US House** (colored by whichever party holds more seats in that
-  state's delegation, purple if tied), **Governors** (solid R/D),
-  **State Legislatures** (derived from the existing `politics.legislature`
-  text — `legislatureClass()` in `js/government.js` parses "X
-  trifecta" / "X legislature, Y governor" / "Split control" /
-  "Democratic (Council + Mayor)" into a color; note that "X
-  legislature, Y governor" colors by the **legislature's** controlling
-  party, which is a different (and correct, for this layer) reading
-  than "trifecta" status).
+**First version used the tile-grid/geographic US map** (colored all 51
+states by category instead of comparing 2 sides). The user then asked
+specifically for **"карту мест в кабинете а не карту страны"** — a
+seat chart for the chamber, not a map of the country — the standard
+"parliamentary hemicycle" visualization (semicircular rows of dots,
+one per seat, grouped left-to-right by party), not a geography-based
+view at all. Replaced the map entirely; `government.html` no longer
+loads d3-geo/topojson-client or references `us-topo.json`.
+
+- **4 layers**, switchable via buttons above the chart: **US Senate**
+  (100 real individual seats, one per senator, each with that
+  senator's name/party/link), **US House** (435 seats + 2 vacant,
+  built from each state's `houseSeats` R/D/vacant counts — no
+  individual representative names, since that data isn't tracked),
+  **Governors** (51 seats, one per governor/DC mayor — not a real
+  chamber, but rendered the same way for visual consistency),
+  **State Legislatures** (51 seats, one per state's overall control
+  status, including a "Split" color for states where the two chambers
+  are held by different parties).
+- **Hemicycle geometry** (`hemicycleLayout()` in `js/government.js`):
+  a general-purpose "N points on M concentric semicircular arcs"
+  layout — row count scales with `√(n × 1.4)` (clamped 4-26) so a
+  51-seat chart and a 435-seat chart both read as a cohesive fan
+  shape rather than the 51-seat version looking sparse; each row's
+  seat count is proportional to its radius (outer rows are longer
+  arcs, so they hold more seats); all points across all rows are
+  finally sorted by angle so seats can be assigned to party blocks
+  strictly left-to-right (Democratic → Independent → Split →
+  Republican → Vacant), which is what makes the familiar "blue block
+  on the left, red block on the right" shape emerge.
 - **New data**: `politics.houseSeats: {total, R, D, vacant}` per
   state, added to `js/data/states.js`. Sourced from Wikipedia's "List
   of current members of the United States House of Representatives"
@@ -205,23 +224,23 @@ entities colored by party control, not a 2-state comparison.
   cross-check it against an independent total.
 - **Summary stat cards** (`renderSummary()`) show live-computed
   national totals per layer — e.g. Senate shows 53 R / 45 D / 2 I /
-  100 total, computed by actually counting `states.js`'s 100 senator
-  entries, not hardcoded, so it can't drift from the per-state data.
-- Reuses the same tile-grid / geographic map toggle as `index.html`,
-  but colors **all 51 states simultaneously** by category (not a
-  2-side comparison) and supports clicking any one state for a detail
-  panel (governor, both senators with links, House delegation with a
-  proportional R/D bar, legislature text, 2024 result) — a materially
-  different interaction model from `index.html`'s "pick 2, compare",
-  which is why it's a separate JS file (`js/government.js`) rather
-  than a mode of `js/app.js`.
-- Party colors are new CSS custom properties (`--party-r`, `--party-d`,
+  100 total, computed by actually counting the built seat list, not
+  hardcoded, so it can't drift from the per-state data.
+- Clicking any seat opens the same detail panel as before (governor,
+  both senators with links, House delegation with a proportional R/D
+  bar, legislature text, 2024 result) — a materially different
+  interaction model from `index.html`'s "pick 2, compare," which is
+  why it's a separate JS file (`js/government.js`) rather than a mode
+  of `js/app.js`.
+- Party colors are CSS custom properties (`--party-r`, `--party-d`,
   `--party-i`, `--party-split`), set equal to the existing
   `--side-b`/`--side-a` navy/red in light mode (a happy coincidence —
   the site's existing 2-side comparison colors already matched the
   standard US political red/blue convention) and to their dark-mode
-  equivalents; `--party-i` and `--party-split` are new gold-ish and
-  purple tones respectively, defined in both themes.
+  equivalents; `--party-i` and `--party-split` are gold-ish and purple
+  tones respectively, defined in both themes. `.seat` is the new SVG
+  circle class (distinct from `.tile`/`.geo-state`, which remain
+  `index.html`-only).
 
 ## Deliberately not built this pass
 - Historical time series (no per-state growth-over-time chart, unlike
