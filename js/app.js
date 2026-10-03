@@ -55,10 +55,13 @@
     grid.style.gridTemplateColumns = `repeat(${maxX + 1}, 1fr)`;
     grid.style.gridTemplateRows = `repeat(${maxY + 1}, 1fr)`;
     grid.innerHTML = sorted
-      .map((s) => `<div class="tile" data-id="${s.id}" title="${s.name}" style="grid-column:${s.gridX + 1};grid-row:${s.gridY + 1}">${s.abbr}</div>`)
+      .map((s) => `<div class="tile" data-id="${s.id}" title="${s.name}" role="button" tabindex="0" aria-label="${s.name}" style="grid-column:${s.gridX + 1};grid-row:${s.gridY + 1}">${s.abbr}</div>`)
       .join("");
     grid.querySelectorAll(".tile").forEach((tile) => {
       tile.addEventListener("click", () => onTileOrPathClick(tile.dataset.id));
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTileOrPathClick(tile.dataset.id); }
+      });
     });
   }
 

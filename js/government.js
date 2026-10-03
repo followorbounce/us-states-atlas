@@ -65,7 +65,7 @@
       legend: [["Democratic", "party-d"], ["Independent", "party-i"], ["Republican", "party-r"]],
     },
     house: {
-      hint: "All 435 US House seats (plus 2 currently vacant). Same left-to-right party grouping as the Senate chart.",
+      hint: "All 435 US House seats (including any currently vacant). Same left-to-right party grouping as the Senate chart.",
       legend: [["Democratic", "party-d"], ["Republican", "party-r"], ["Vacant", "party-none"]],
     },
     governor: {
@@ -129,7 +129,7 @@
     } else if (layer === "house") {
       el.innerHTML = statCards([["R", counts.Republican || 0, "r"], ["D", counts.Democratic || 0, "d"], ["Vacant", counts.Vacant || 0, ""], ["Total seats", seats.length, ""]]);
     } else if (layer === "governor") {
-      el.innerHTML = statCards([["R governors", counts.Republican || 0, "r"], ["D governors", counts.Democratic || 0, "d"]]);
+      el.innerHTML = statCards([["R governors", counts.Republican || 0, "r"], ["D governors (incl. DC mayor)", counts.Democratic || 0, "d"]]);
     } else {
       el.innerHTML = statCards([["R-controlled", counts.Republican || 0, "r"], ["D-controlled", counts.Democratic || 0, "d"], ["Split", counts.Split || 0, ""]]);
     }
