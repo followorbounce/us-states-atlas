@@ -153,7 +153,7 @@ still match official totals exactly on all 4 layers after the rewrite;
 click-to-select and the detail panel still work; both themes and
 390px mobile width render correctly with the new chart.
 
-## 2026-10-02 — Applications & Data review pass (not committed)
+## 2026-10-02 — Applications & Data review pass (committed in 58ea505, pushed)
 - Data tallies re-verified from `states.js`: 51 entities / 50 states, 100 senators (53 R / 45 D / 2 I), 435 House seats (219 R / 214 D / 2 vacant), every state's `R+D+vacant = total`, GDP/pop matches per-capita within 3% for all 51, no grid-tile collisions.
 - **Fixed** `js/government.js`: House hint said "All 435 seats (plus 2 currently vacant)", but the 2 vacancies are inside the 435. Governor summary card now reads "D governors (incl. DC mayor)" since the D count includes DC's mayor.
 - **Fixed** accessibility: tile-grid map tiles are now `role="button"` + `tabindex="0"` with Enter/Space; `#selectA`/`#selectB` got `aria-label`s.
