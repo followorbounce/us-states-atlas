@@ -165,3 +165,6 @@ click-to-select and the detail panel still work; both themes and
 - Congress/government data is a September 2026 snapshot, not a live
   feed — will drift as seats change (special elections, deaths,
   resignations), same caveat as the senator data on the main page.
+
+## 2026-10-16 — Index infrastructure
+- added missing canonical URL, description where absent, Open Graph and twitter:card tags. The host-level robots.txt / sitemap index / llms.txt live in followorbounce.github.io.
